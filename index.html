@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CrisisWeave Map</title>
+  <link href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
+  <style>
+    html,body,#map{height:100%;margin:0;font-family:system-ui,sans-serif}#panel{position:absolute;z-index:2;left:12px;top:12px;max-width:360px;background:#fff;padding:12px;border-radius:10px;box-shadow:0 3px 18px #0003}#status{font-size:13px;margin-top:8px}.muted{color:#555}input{max-width:100%}.badge{font-size:11px;font-weight:700;padding:2px 5px;border:1px solid #444;border-radius:4px}
+  </style>
+</head>
+<body>
+<div id="panel">
+  <strong>CrisisWeave</strong>
+  <div class="muted">Load JSON, JSONL, or use <code>?feed=URL</code>.</div>
+  <input id="file" type="file" accept=".json,.jsonl,application/json,text/plain" />
+  <div id="status">No events loaded.</div>
+</div>
+<div id="map"></div>
+<script>
+const map = new maplibregl.Map({
+  container:'map',
+  style:'https://demotiles.maplibre.org/style.json',
+  center:[0,20], zoom:1.4
+});
+map.addControl(new maplibregl.NavigationControl(), 'top-right');
+const statusEl = document.getElementById('status');
+
+function parseEvents(text){
+  try {
+    const data=JSON.parse(text);
+    if(Array.isArray(data)) return data;
+    if(Array.isArray(data.events)) return data.events;
+    return [data];
+  } catch(e) {
+    return text.split(/\r?\n/).filter(Boolean).map(line=>JSON.parse(line));
+  }
+}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
+function toGeoJSON(events){
+  const features=[];
+  for(const e of events){
+    const g=e.geometry;
+    if(!g||g.type!=='Point'||!Array.isArray(g.coordinates)||g.coordinates.length!==2) continue;
+    const [lon,lat]=g.coordinates.map(Number);
+    if(!Number.isFinite(lon)||!Number.isFinite(lat)||Math.abs(lat)>90||Math.abs(lon)>180) continue;
+    features.push({type:'Feature',geometry:{type:'Point',coordinates:[lon,lat]},properties:{
+      id:String(e.id??''), title:String(e.title??'Untitled'), kind:String(e.kind??'other'),
+      severity:Number(e.severity??0.5), confidence:Number(e.confidence??0.4), official:Boolean(e.official),
+      area:String(e.area??''), observed_at:String(e.observed_at??''), source:String(e.source?.name??'unknown'), description:String(e.description??'')
+    }});
+  }
+  return {type:'FeatureCollection',features};
+}
+function render(events){
+  const geo=toGeoJSON(events);
+  const missing=events.length-geo.features.length;
+  statusEl.textContent=`${events.length} events · ${geo.features.length} mapped · ${missing} without point geometry`;
+  const data=map.getSource('events');
+  if(data) data.setData(geo);
+  else {
+    map.addSource('events',{type:'geojson',data:geo});
+    map.addLayer({id:'events',type:'circle',source:'events',paint:{
+      'circle-radius':['+',5,['*',9,['coalesce',['get','severity'],0.5]]],
+      'circle-opacity':['max',0.35,['coalesce',['get','confidence'],0.4]],
+      'circle-stroke-width':1.5,
+      'circle-stroke-color':'#111',
+      'circle-color':['match',['get','kind'],'wildfire','#d94801','flood','#2171b5','earthquake','#756bb1','storm','#238b45','medical','#cb181d','infrastructure','#636363','#fdae6b']
+    }});
+    map.on('click','events',e=>{
+      const p=e.features[0].properties;
+      new maplibregl.Popup().setLngLat(e.lngLat).setHTML(`<strong>${esc(p.title)}</strong> ${p.official?'<span class="badge">OFFICIAL</span>':''}<br>${esc(p.kind)} · severity ${Number(p.severity).toFixed(2)} · confidence ${Number(p.confidence).toFixed(2)}<br>${esc(p.area)}<br><small>${esc(p.source)} · ${esc(p.observed_at)}</small><p>${esc(p.description)}</p>`).addTo(map);
+    });
+    map.on('mouseenter','events',()=>map.getCanvas().style.cursor='pointer');
+    map.on('mouseleave','events',()=>map.getCanvas().style.cursor='');
+  }
+  if(geo.features.length){
+    const b=new maplibregl.LngLatBounds(); geo.features.forEach(f=>b.extend(f.geometry.coordinates));
+    map.fitBounds(b,{padding:60,maxZoom:9});
+  }
+}
+async function loadText(text){try{render(parseEvents(text));localStorage.setItem('crisisweave:last-events',text);}catch(e){statusEl.textContent='Could not parse feed: '+e.message;}}
+document.getElementById('file').addEventListener('change',async e=>{const f=e.target.files[0];if(f)loadText(await f.text());});
+map.on('load',async()=>{
+  const feed=new URLSearchParams(location.search).get('feed');
+  if(feed){
+    try{const r=await fetch(feed);if(!r.ok)throw new Error(`HTTP ${r.status}`);await loadText(await r.text());return;}catch(e){statusEl.textContent='Live feed unavailable; trying cached snapshot.';}
+  }
+  const cached=localStorage.getItem('crisisweave:last-events'); if(cached) await loadText(cached);
+});
+if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(()=>{});}
+</script>
+</body>
+</html>
