@@ -31,10 +31,22 @@ class StaticSafetyTests(unittest.TestCase):
         self.assertIn("const offlineStyle=", html)
         self.assertIn("style:navigator.onLine?", html)
 
-    def test_volunteer_surface_is_present(self):
+    def test_volunteer_surface_is_public_snapshot_only(self):
         html = (ROOT / "volunteer.html").read_text(encoding="utf-8")
-        self.assertIn("worksite", html.lower())
-        self.assertIn("assigned", html.lower())
+        self.assertIn("privacy-minimised public worksite snapshot", html)
+        self.assertIn("function safeSnapshotUrl", html)
+        self.assertIn("u.origin!==location.origin", html)
+        self.assertIn("MAX_SNAPSHOT_BYTES=5*1024*1024", html)
+        self.assertIn("credentials:'same-origin'", html)
+        self.assertIn("crisisweave:last-worksites-public", html)
+        self.assertNotIn("q.get('api')", html)
+        self.assertNotIn("Live operational API", html)
+        self.assertNotIn("coordinator_instructions", html)
+        self.assertNotIn("assigned_team", html)
+
+    def test_volunteer_geometry_is_bounded(self):
+        html = (ROOT / "volunteer.html").read_text(encoding="utf-8")
+        self.assertIn("Math.abs(lon)<=180&&Math.abs(lat)<=90", html)
 
 
 if __name__ == "__main__":
