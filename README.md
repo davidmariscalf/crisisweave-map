@@ -1,77 +1,60 @@
 # crisisweave-map
 
-A volunteer-first field console for CrisisWeave incidents.
+Browser interfaces for the public CrisisWeave field package.
 
-The primary interface is intentionally non-technical. A volunteer should be able to open the page and immediately answer four questions:
+This repository deliberately exposes **two different surfaces** rather than pretending that coordinators and cleanup volunteers need the same product.
 
-1. What needs attention first?
-2. Where is it?
-3. How well is it corroborated?
-4. What should I open or verify next?
+## `index.html` — coordinator / information-management console
 
-Raw JSON/JSONL loading still exists, but it is hidden under **Technical import options** for operators and testing.
+The incident console consumes normalized/verified CrisisWeave events and presents:
 
-## Volunteer view
+- priority-oriented list + map
+- plain-language evidence/corroboration
+- official vs non-official source visibility
+- search and filters
+- optional distance from the user's location
+- raw JSON/JSONL import as a secondary operator feature
 
-The console provides:
-
-- priority-first incident cards
-- plain-language evidence labels instead of raw confidence numbers
-- filters for Priority, Official, and Needs review
-- search by place, event type, title, or description
-- optional browser geolocation with distance-to-incident display
-- responsive List / Map switching on mobile
-- incident detail cards with source count and source link when available
-- share/copy support for incident summaries
-- visible online/offline state
-- explicit safety wording reminding volunteers to follow official instructions and their coordinator
-
-Priority incidents are driven by the CrisisWeave alerts feed when present. Conservative fallback rules are used only when alert metadata is unavailable.
-
-## Run locally
-
-For the normal integrated package, `verified.jsonl` and `alerts.jsonl` are loaded automatically:
-
-```bash
-python -m http.server 8000
-```
-
-Then open:
+Feed override:
 
 ```text
-http://localhost:8000
+index.html?feed=https://example.invalid/verified.jsonl
 ```
 
-Operators can override the inputs when needed:
+## `volunteer.html` — recovery work board
+
+The volunteer view consumes the canonical `crisisweave-worksites` contract and presents concrete requested/assessed work only:
+
+- lifecycle state
+- priority
+- work type
+- people needed
+- required skills
+- hazards and safety notes
+- assigned team, when present
+- coordinator instructions
+- approximate location and optional distance
+
+It **does not infer jobs from hazard alerts** and deliberately has no fake local “claim” button.
+
+By default it first looks for a same-origin `api/worksites` endpoint, then falls back to packaged `worksites.jsonl`, then to the most recent cached snapshot.
+
+To point it at the localhost API from `crisisweave-worksites`:
 
 ```text
-?feed=https://example.org/verified.jsonl&alerts=https://example.org/alerts.jsonl
+volunteer.html?api=http://127.0.0.1:8787/api/worksites
 ```
 
-## Supported incident input
+A packaged snapshot can be overridden with:
 
-- JSON array of CrisisWeave events
-- JSON object with `events: [...]`
-- newline-delimited JSON
-
-Only events with valid Point geometry are plotted. Events without coordinates remain visible in the incident list instead of being assigned guessed locations.
-
-## Evidence semantics
-
-The UI deliberately avoids presenting CrisisWeave confidence as a probability that a report is true. Volunteers instead see labels such as:
-
-- Official source
-- Official + supporting sources
-- Corroborated by N independent sources
-- Single-source report
-- Needs corroboration
-
-The underlying numeric values remain part of the event contract for deterministic processing, but they are not the main user-facing language.
+```text
+volunteer.html?worksites=https://example.invalid/worksites.jsonl
+```
 
 ## Offline integration
 
-Copy the service worker from `crisisweave-offline` into this repository as `sw.js`. The integrated `CrisisWeave` repository already does this and packages both the verified incident feed and alert feed for network-first caching.
+The umbrella E2E package copies the service worker from `crisisweave-offline`. It caches the two interfaces plus the most recent incident, alert and worksite snapshots.
 
-## Scope
+## Safety boundary
 
-This remains decision-support software, not an emergency authority or volunteer dispatch system. It does not assign tasks, authorize travel, or replace official emergency instructions.
+These interfaces are decision-support and coordination surfaces, not an emergency authority or autonomous dispatch system. A worksite shown to a volunteer is not permission to enter a property or hazardous area. Real deployment requires authenticated organisations/users, permissions, protected survivor data, authoritative assignment, monitoring and coordinator oversight.
