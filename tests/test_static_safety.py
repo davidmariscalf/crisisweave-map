@@ -12,6 +12,20 @@ class StaticSafetyTests(unittest.TestCase):
         self.assertIn("sourceUrl=safeHttpUrl(e?.source?.url)", html)
         self.assertIn('rel="noopener noreferrer"', html)
 
+    def test_snapshot_query_parameters_stay_same_origin(self):
+        html = (ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn("function safeSnapshotUrl", html)
+        self.assertIn("u.origin!==location.origin", html)
+        self.assertIn("safeSnapshotUrl(params.get('feed'),'verified.jsonl')", html)
+        self.assertIn("safeSnapshotUrl(params.get('alerts'),'alerts.jsonl')", html)
+        self.assertIn("MAX_SNAPSHOT_BYTES=5*1024*1024", html)
+        self.assertIn("credentials:'same-origin'", html)
+
+    def test_coordinator_surface_is_labelled_correctly(self):
+        html = (ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn("Coordinator incident console", html)
+        self.assertNotIn("<small>Volunteer field view</small>", html)
+
     def test_offline_map_has_local_style_fallback(self):
         html = (ROOT / "index.html").read_text(encoding="utf-8")
         self.assertIn("const offlineStyle=", html)
