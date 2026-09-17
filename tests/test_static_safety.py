@@ -31,6 +31,25 @@ class StaticSafetyTests(unittest.TestCase):
         self.assertIn("const offlineStyle=", html)
         self.assertIn("style:navigator.onLine?", html)
 
+    def test_incident_map_accepts_validated_area_geometry(self):
+        html = (ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn("function validPosition", html)
+        self.assertIn("function validRing", html)
+        self.assertIn("g?.type==='Polygon'", html)
+        self.assertIn("g?.type==='MultiPolygon'", html)
+        self.assertIn("id:'event-areas'", html)
+        self.assertIn("id:'event-area-outline'", html)
+        self.assertIn("geometryOf(e)", html)
+        self.assertIn("Math.abs(lat)<=90&&Math.abs(lon)<=180", html)
+        self.assertIn("ring[0][0]!==ring[ring.length-1][0]", html)
+
+    def test_area_geometry_is_used_for_metrics_distance_and_bounds(self):
+        html = (ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn("allEvents.filter(e=>geometryOf(e)).length", html)
+        self.assertIn("distanceKm(userLocation,geometryCenter(e))", html)
+        self.assertIn("geometryPositions(f.geometry)", html)
+        self.assertIn("focusEventGeometry(e)", html)
+
     def test_volunteer_surface_is_public_snapshot_only(self):
         html = (ROOT / "volunteer.html").read_text(encoding="utf-8")
         self.assertIn("privacy-minimised public worksite snapshot", html)
