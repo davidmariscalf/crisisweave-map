@@ -96,6 +96,15 @@ class StaticSafetyTests(unittest.TestCase):
         self.assertNotIn("coordinator_instructions", html)
         self.assertNotIn("assigned_team", html)
 
+    def test_volunteer_snapshot_freshness_is_visible(self):
+        html = (ROOT / "volunteer.html").read_text(encoding="utf-8")
+        self.assertIn('id="freshness"', html)
+        self.assertIn("STALE_AFTER_MS=12*60*60*1000", html)
+        self.assertIn("function updateFreshness", html)
+        self.assertIn("Worksite age unknown", html)
+        self.assertIn("Snapshot may be stale", html)
+        self.assertIn("function render(){updateFreshness();", html)
+
     def test_volunteer_geometry_is_bounded(self):
         html = (ROOT / "volunteer.html").read_text(encoding="utf-8")
         self.assertIn("Math.abs(lon)<=180&&Math.abs(lat)<=90", html)
