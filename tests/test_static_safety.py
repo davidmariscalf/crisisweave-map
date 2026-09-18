@@ -30,6 +30,13 @@ class StaticSafetyTests(unittest.TestCase):
         html = (ROOT / "index.html").read_text(encoding="utf-8")
         self.assertIn("const offlineStyle=", html)
         self.assertIn("style:navigator.onLine?", html)
+        self.assertIn("./vendor/maplibre-gl.css", html)
+        self.assertIn("./vendor/maplibre-gl.js", html)
+        self.assertNotIn("https://unpkg.com/maplibre-gl@", html)
+        self.assertIn("if(!window.maplibregl)", html)
+        self.assertIn("Map unavailable", html)
+        self.assertIn("if(!map)return", html)
+        self.assertIn("if(map&&map.loaded())", html)
 
     def test_incident_map_accepts_validated_area_geometry(self):
         html = (ROOT / "index.html").read_text(encoding="utf-8")
