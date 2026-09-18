@@ -45,6 +45,15 @@ class StaticSafetyTests(unittest.TestCase):
         self.assertIn('"display": "standalone"', manifest)
         self.assertIn('"start_url": "./index.html"', manifest)
 
+    def test_feed_freshness_is_visible(self):
+        html = (ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn('id="freshness"', html)
+        self.assertIn("STALE_AFTER_MS=6*60*60*1000", html)
+        self.assertIn("function updateFreshness", html)
+        self.assertIn("Feed age unknown", html)
+        self.assertIn("Data may be stale", html)
+        self.assertIn("updateMetrics();updateFreshness();renderList()", html)
+
     def test_incident_map_accepts_validated_area_geometry(self):
         html = (ROOT / "index.html").read_text(encoding="utf-8")
         self.assertIn("function validPosition", html)
