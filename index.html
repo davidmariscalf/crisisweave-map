@@ -83,18 +83,16 @@ async function initMap(){
   const mapEl=document.getElementById('map');
   if(!window.maplibregl){
     mapEl.innerHTML='<div class="mapfallback"><div><strong>Map unavailable</strong>Incident data and details remain available. Reconnect or use a field package that includes the local map runtime.</div></div>';
-    boot();
     return;
   }
   const style=await initialMapStyle();
   try{
     map=new maplibregl.Map({container:'map',style,center:[0,20],zoom:1.4});
     map.addControl(new maplibregl.NavigationControl(),'top-right');
-    map.on('load',boot);
+    map.on('load',renderMap);
   }catch(_){
     map=null;
     mapEl.innerHTML='<div class="mapfallback"><div><strong>Map unavailable</strong>Incident data and details remain available on this device.</div></div>';
-    boot();
   }
 }
 
@@ -147,6 +145,7 @@ document.getElementById('locate').onclick=()=>{if(!navigator.geolocation)return;
 function syncTabs(){const m=app.classList.contains('map-mode');document.getElementById('tabList').classList.toggle('active',!m);document.getElementById('tabMap').classList.toggle('active',m);}
 document.getElementById('tabList').onclick=()=>{app.classList.remove('map-mode');syncTabs();};document.getElementById('tabMap').onclick=()=>{app.classList.add('map-mode');syncTabs();setTimeout(()=>{if(map)map.resize();},0);};
 initMap();
+boot();
 if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js').catch(()=>{});}
 </script>
 </body>
