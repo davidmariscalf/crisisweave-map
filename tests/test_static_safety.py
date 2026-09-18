@@ -38,6 +38,13 @@ class StaticSafetyTests(unittest.TestCase):
         self.assertIn("if(!map)return", html)
         self.assertIn("if(map&&map.loaded())", html)
 
+    def test_field_console_links_packaged_manifest(self):
+        html = (ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn('rel="manifest" href="./manifest.webmanifest"', html)
+        manifest = (ROOT / "manifest.webmanifest").read_text(encoding="utf-8")
+        self.assertIn('"display": "standalone"', manifest)
+        self.assertIn('"start_url": "./index.html"', manifest)
+
     def test_incident_map_accepts_validated_area_geometry(self):
         html = (ROOT / "index.html").read_text(encoding="utf-8")
         self.assertIn("function validPosition", html)
