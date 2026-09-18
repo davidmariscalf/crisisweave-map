@@ -29,7 +29,12 @@ class StaticSafetyTests(unittest.TestCase):
     def test_offline_map_has_local_style_fallback(self):
         html = (ROOT / "index.html").read_text(encoding="utf-8")
         self.assertIn("const offlineStyle=", html)
-        self.assertIn("style:navigator.onLine?", html)
+        self.assertIn("async function initialMapStyle", html)
+        self.assertIn("const controller=new AbortController()", html)
+        self.assertIn("return offlineStyle", html)
+        self.assertIn("map.on('load',boot)", html)
+        self.assertNotIn("style:navigator.onLine?", html)
+        self.assertEqual(html.count("initMap();"), 1)
         self.assertIn("./vendor/maplibre-gl.css", html)
         self.assertIn("./vendor/maplibre-gl.js", html)
         self.assertNotIn("https://unpkg.com/maplibre-gl@", html)
