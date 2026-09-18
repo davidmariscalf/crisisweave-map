@@ -55,6 +55,9 @@ class StaticSafetyTests(unittest.TestCase):
         self.assertIn("function wrappedLongitudeCenter", html)
         self.assertIn("largestGap", html)
         self.assertIn("const lon=wrappedLongitudeCenter(points)", html)
+        self.assertIn("function positionsForBounds", html)
+        self.assertIn("const bounded=positionsForBounds(points)", html)
+        self.assertIn("bounded.forEach(p=>b.extend(p))", html)
         self.assertNotIn("(minLon+maxLon)/2", html)
 
     def test_volunteer_surface_is_public_snapshot_only(self):
