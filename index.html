@@ -63,17 +63,34 @@ let allEvents=[], alertIds=new Set(), activeFilter='all', userLocation=null, pop
 
 const offlineStyle={version:8,sources:{},layers:[{id:'background',type:'background',paint:{'background-color':'#111827'}}]};
 let map=null;
-function initMap(){
+const ONLINE_STYLE_URL='https://demotiles.maplibre.org/style.json';
+async function initialMapStyle(){
+  if(!navigator.onLine)return offlineStyle;
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),1500);
+  try{
+    const response=await fetch(ONLINE_STYLE_URL,{cache:'no-store',credentials:'omit',referrerPolicy:'no-referrer',signal:controller.signal});
+    if(!response.ok)throw new Error('map style unavailable');
+    const style=await response.json();
+    return style&&style.version===8?style:offlineStyle;
+  }catch(_){
+    return offlineStyle;
+  }finally{
+    clearTimeout(timeout);
+  }
+}
+async function initMap(){
   const mapEl=document.getElementById('map');
   if(!window.maplibregl){
     mapEl.innerHTML='<div class="mapfallback"><div><strong>Map unavailable</strong>Incident data and details remain available. Reconnect or use a field package that includes the local map runtime.</div></div>';
     boot();
     return;
   }
+  const style=await initialMapStyle();
   try{
-    map=new maplibregl.Map({container:'map',style:navigator.onLine?'https://demotiles.maplibre.org/style.json':offlineStyle,center:[0,20],zoom:1.4});
+    map=new maplibregl.Map({container:'map',style,center:[0,20],zoom:1.4});
     map.addControl(new maplibregl.NavigationControl(),'top-right');
-    initMap();
+    map.on('load',boot);
   }catch(_){
     map=null;
     mapEl.innerHTML='<div class="mapfallback"><div><strong>Map unavailable</strong>Incident data and details remain available on this device.</div></div>';
