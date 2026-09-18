@@ -50,6 +50,13 @@ class StaticSafetyTests(unittest.TestCase):
         self.assertIn("geometryPositions(f.geometry)", html)
         self.assertIn("focusEventGeometry(e)", html)
 
+    def test_area_center_handles_antimeridian_wrapping(self):
+        html = (ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn("function wrappedLongitudeCenter", html)
+        self.assertIn("largestGap", html)
+        self.assertIn("const lon=wrappedLongitudeCenter(points)", html)
+        self.assertNotIn("(minLon+maxLon)/2", html)
+
     def test_volunteer_surface_is_public_snapshot_only(self):
         html = (ROOT / "volunteer.html").read_text(encoding="utf-8")
         self.assertIn("privacy-minimised public worksite snapshot", html)
