@@ -44,6 +44,13 @@ class StaticSafetyTests(unittest.TestCase):
         self.assertIn("if(!map)return", html)
         self.assertIn("if(map&&map.loaded())", html)
 
+    def test_offline_status_uses_real_connectivity(self):
+        html = (ROOT / "index.html").read_text(encoding="utf-8")
+        self.assertIn("if(!navigator.onLine)setConnection(false,'Offline snapshot')", html)
+        self.assertIn("else if(!live)setConnection(false,'Cached snapshot')", html)
+        volunteer = (ROOT / "volunteer.html").read_text(encoding="utf-8")
+        self.assertIn("setConnection(navigator.onLine?'static':'cache')", volunteer)
+
     def test_field_console_links_packaged_manifest(self):
         html = (ROOT / "index.html").read_text(encoding="utf-8")
         self.assertIn('rel="manifest" href="./manifest.webmanifest"', html)
