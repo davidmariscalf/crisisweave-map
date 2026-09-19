@@ -13,47 +13,48 @@ The incident console consumes normalized/verified CrisisWeave events and present
 - official vs non-official source visibility
 - search and filters
 - optional distance from the user's location
+- explicit feed-freshness/staleness warnings
 - raw JSON/JSONL import as a secondary operator feature
 
-Feed override:
+Feed and alert overrides are accepted only for same-origin JSON/JSONL resources. Cross-origin query overrides are rejected.
 
-```text
-index.html?feed=https://example.invalid/verified.jsonl
-```
+## `volunteer.html` — public recovery work board
 
-## `volunteer.html` — recovery work board
+The volunteer view consumes only the privacy-minimised public `worksites.jsonl` projection produced by `crisisweave-worksites/public_export.py`.
 
-The volunteer view consumes the canonical `crisisweave-worksites` contract and presents concrete requested/assessed work only:
+It presents:
 
 - lifecycle state
 - priority
 - work type
 - people needed
 - required skills
-- hazards and safety notes
-- assigned team, when present
-- coordinator instructions
-- approximate location and optional distance
+- hazards and public safety notes
+- approximate/public-safe location and optional distance
+- explicit snapshot-freshness/staleness warnings
 
-It **does not infer jobs from hazard alerts** and deliberately has no fake local “claim” button.
+It intentionally does **not** receive `assigned_team`, coordinator instructions, free-form operational descriptions, private partner metadata or survivor PII. It never connects directly to the operational worksite API and has no self-claim action.
 
-By default it first looks for a same-origin `api/worksites` endpoint, then falls back to packaged `worksites.jsonl`, then to the most recent cached snapshot.
-
-To point it at the localhost API from `crisisweave-worksites`:
-
-```text
-volunteer.html?api=http://127.0.0.1:8787/api/worksites
-```
-
-A packaged snapshot can be overridden with:
-
-```text
-volunteer.html?worksites=https://example.invalid/worksites.jsonl
-```
+A same-origin packaged snapshot may be selected with the `worksites` query parameter; cross-origin or non-JSON targets are rejected.
 
 ## Offline integration
 
-The umbrella E2E package copies the service worker from `crisisweave-offline`. It caches the two interfaces plus the most recent incident, alert and worksite snapshots.
+The locked umbrella release:
+
+- packages MapLibre GL JS/CSS locally instead of loading its runtime from a CDN
+- verifies the pinned MapLibre npm tarball integrity before extracting runtime assets and the upstream license
+- copies the service worker from `crisisweave-offline`
+- caches both browser surfaces plus incident, alert and public-worksite snapshots
+- uses a bounded local no-basemap style when the online basemap is unavailable
+- keeps incident data startup independent from map/WebGL availability
+
+The cross-repository release gate includes a real Chromium cold-start smoke test. It warms the generated field package, disables browser networking, then requires both coordinator and volunteer surfaces to reopen from the service-worker cache without external requests or page errors.
+
+Offline data is historical context, not proof that conditions remain unchanged. Both surfaces expose freshness state and require current official/coordinator confirmation before action.
+
+## Operational actions
+
+Assignment, release and lifecycle mutations belong to the authenticated `crisisweave-platform` operations console. They are intentionally absent from the public volunteer surface.
 
 ## Safety boundary
 
